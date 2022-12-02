@@ -4,7 +4,9 @@
 #include "CipherType.hpp"
 #include "PlayfairCipher.hpp"
 #include "VigenereCipher.hpp"
+#include "CommandLineExceptions.hpp"
 
+#include <iostream>
 #include <memory>
 #include <string>
 

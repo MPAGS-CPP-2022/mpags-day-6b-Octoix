@@ -1,5 +1,6 @@
 #include "CaesarCipher.hpp"
 #include "Alphabet.hpp"
+#include "CommandLineExceptions.hpp"
 
 #include <iostream>
 #include <string>
@@ -27,9 +28,9 @@ CaesarCipher::CaesarCipher(const std::string& key) : key_{0}
     try {
         key_ = std::stoul(key) % Alphabet::size;
     } catch (const std::invalid_argument& e) {
-        std::cout << "Your argument was invalid, defaulting to a key of zero" << std::endl;
+        throw InvalidArgument("Caesar cipher key argument was invalid");
     } catch (const std::out_of_range& e) {
-        std::cout << "That key was too big, using a key of zero" << std::endl;
+        throw InvalidArgument("Your Caesar cipher key was out of range for type unsigned long int");
     }
 }
 

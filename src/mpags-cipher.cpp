@@ -3,12 +3,15 @@
 #include "CipherType.hpp"
 #include "ProcessCommandLine.hpp"
 #include "TransformChar.hpp"
+#include "CommandLineExceptions.hpp"
 
 #include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <string>
 #include <vector>
+#include <future>
+#include <thread>
 
 int main(int argc, char* argv[])
 {
@@ -19,11 +22,13 @@ int main(int argc, char* argv[])
     ProgramSettings settings{false, false, "", "", {}, {}, CipherMode::Encrypt};
 
     // Process command line arguments
-    const bool cmdLineStatus{processCommandLine(cmdLineArgs, settings)};
-
-    // Any failure in the argument processing means we can't continue
-    // Use a non-zero return value to indicate failure
-    if (!cmdLineStatus) {
+    try {
+        processCommandLine(cmdLineArgs, settings);
+    } catch (const MissingArgument& e) {
+        std::cerr << "[error] Missing argument: " << e.what() << std::endl;
+        return 1;
+    } catch (const InvalidArgument& e) {
+        std::cerr << "[error] Invalid argument: " << e.what() << std::endl;
         return 1;
     }
 
@@ -95,13 +100,20 @@ int main(int argc, char* argv[])
     std::size_t nCiphers{settings.cipherType.size()};
     ciphers.reserve(nCiphers);
     for (std::size_t iCipher{0}; iCipher < nCiphers; ++iCipher) {
-        ciphers.push_back(CipherFactory::makeCipher(
-            settings.cipherType[iCipher], settings.cipherKey[iCipher]));
+        try {
+            ciphers.push_back(CipherFactory::makeCipher(
+                settings.cipherType[iCipher], settings.cipherKey[iCipher]));
+        } catch (const InvalidKey& e) {
+            std::cerr << "[error] failed to construct cipher due an in invalid key: " << e.what() << std::endl;
+            return 1;
+        } catch (const InvalidArgument& e) {
+            std::cerr << "[error] failed to construct cipher due to an invalid argument: " << e.what() << std::endl;
+            return 1;
+        }
 
         // Check that the cipher was constructed successfully
         if (!ciphers.back()) {
-            std::cerr << "[error] problem constructing requested cipher"
-                      << std::endl;
+            throw FailedCipherBuild("One or more ciphers failed to construct. Did you specify all the arguments correctly?");
             return 1;
         }
     }
